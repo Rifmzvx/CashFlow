@@ -550,6 +550,8 @@ function homeView(){
   +'<div class="card"><h2>Dompet <button class="btn ghost sm" data-act="tab" data-v="more">Kelola</button></h2><div class="list">'
   +S.wallets.filter(function(w){return !w.archived}).map(function(w){var b=bal(w);return '<div class="item"><div class="ico transfer" aria-hidden="true">▣</div><div class="grow"><div class="ttl">'+esc(w.name)+'</div><div class="sub">'+esc(w.type)+'</div></div><div class="num" style="font-weight:700">'+formatRupiah(b)+'</div></div>'}).join('')
   +'</div></div>'
+  +quickButtons()
+  +guideCard()
   +homeAlerts()
   +'<div class="card"><h2>Arus kas 6 bulan</h2>'+chart(monthSeries(live(),ui.month,6))+'</div>'
   +(goals.length?'<div class="card"><h2>Target tabungan <button class="btn ghost sm" data-act="tab" data-v="goal">Lihat</button></h2>'+goals.map(function(g){return goalMini(g)}).join('')+'</div>':'')
@@ -645,6 +647,7 @@ var MI={
  down:'<path d="M12 4v11M7 11l5 5 5-5M4 20h16"/>',
  up:'<path d="M12 16V5M7 9l5-5 5 5M4 20h16"/>',
  cloud:'<path d="M7 18a4 4 0 0 1-.6-7.96A6 6 0 0 1 18 9.5a4.2 4.2 0 0 1-.5 8.5z"/>',
+ info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
  reset:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>'
 };
 function tile(act,label,ic,opt){opt=opt||{};return '<button class="tile'+(opt.tone?' t-'+opt.tone:'')+'" data-act="'+act+'"><span class="ti" aria-hidden="true"><svg viewBox="0 0 24 24">'+MI[ic]+'</svg></span><span>'+label+'</span>'+(opt.sub?'<span class="ts">'+esc(opt.sub)+'</span>':'')+(opt.badge?'<span class="bdg" aria-label="'+opt.badge+' item">'+opt.badge+'</span>':'')+'</button>'}
@@ -672,6 +675,7 @@ function moreView(){
   +tile('m-close','Tutup buku','lock',{sub:S.closed.length?S.closed.length+' ditutup':''})
   +'</div>'
   +'<div class="grp"><h2>Data & keamanan</h2><span>penting</span></div><div class="grid">'
+  +tile('m-about','Tentang & bantuan','info',{tone:'mute'})
   +tile('m-sync','Sinkron','cloud',{sub:syncLabel(),tone:sync.st==='ok'?'':sync.st==='error'||sync.st==='conflict'?'out':'mute'})
   +tile('m-pin','Kunci PIN','shield',{sub:pinOn?'Aktif':'Mati',tone:pinOn?'':'mute'})
   +tile('m-theme','Tampilan','moon',{tone:'mute'})
@@ -688,9 +692,9 @@ function moreView(){
 function onboardView(){
   var d=ui.draft||(ui.draft={name:'Dompet Tunai',type:'Tunai',initial:0});
   return '<div class="wrap">'+head('Selamat datang','Catat keuangan pribadi, keluarga, atau usaha kecil')
-  +'<div class="card"><h2>Buat dompet pertama</h2><label for="f-name">Nama dompet</label><input id="f-name" data-f="name" value="'+esc(d.name)+'" maxlength="40">'
+  +'<div class="card"><h2>Buat dompet pertama</h2><div class="sub">Dompet adalah tempat uang Anda berada: tunai, rekening bank, atau e-wallet. Isi nama dan saldo yang ada sekarang, lalu tekan Mulai. Dompet lain bisa ditambah nanti.</div><label for="f-name">Nama dompet</label><input id="f-name" data-f="name" value="'+esc(d.name)+'" maxlength="40" placeholder="mis. Dompet Tunai, BCA, GoPay">'
   +'<label for="f-type">Jenis</label><select id="f-type" data-f="type">'+['Tunai','Bank','E-wallet','Lainnya'].map(function(x){return '<option'+(d.type===x?' selected':'')+'>'+x+'</option>'}).join('')+'</select>'
-  +'<label for="f-init">Saldo saat ini</label><input id="f-init" class="amt" inputmode="numeric" data-f="initial" data-money="1" value="'+(d.initial?formatRupiah(d.initial,false):'')+'" placeholder="0">'
+  +'<label for="f-init">Saldo saat ini</label><input id="f-init" class="amt" inputmode="numeric" data-f="initial" data-money="1" value="'+(d.initial?formatRupiah(d.initial,false):'')+'" placeholder="0"><div class="sub" style="margin-top:4px">Boleh 0 jika dompet masih kosong.</div>'
   +'<div class="err" id="err" role="alert"></div><button class="btn pri" style="width:100%" data-act="onboard">Mulai mencatat</button></div>'
   +'<div class="card"><h2>Ingin lihat dulu?</h2><div class="sub" style="margin-bottom:10px">Isi dengan data contoh (dompet, transaksi, target tabungan) untuk mencoba semua fitur. Bisa dihapus kapan saja.</div><button class="btn" style="width:100%" data-act="onboard-sample">Coba dengan data contoh</button></div></div>';
 }
@@ -788,6 +792,7 @@ function walletForm(){var d=ui.draft,edit=!!ui.sheet.id;
   return '<h2>'+(edit?'Ubah dompet':'Dompet baru')+'</h2><label for="f-name">Nama</label><input id="f-name" data-f="name" value="'+esc(d.name)+'" maxlength="40">'
   +'<label for="f-type">Jenis</label><select id="f-type" data-f="type">'+['Tunai','Bank','E-wallet','Lainnya'].map(function(x){return '<option'+(d.type===x?' selected':'')+'>'+x+'</option>'}).join('')+'</select>'
   +(edit?'':moneyInput('f-init','initial',d.initial,'Saldo awal (Rp)'))
+  +moneyInput('f-min','minBalance',d.minBalance,'Peringatan saldo rendah di bawah (Rp, opsional)')
   +'<div class="err" id="err" role="alert"></div><div class="row" style="margin-top:6px"><button class="btn grow" data-act="back">Batal</button><button class="btn pri grow" data-act="wallet-save">Simpan</button></div>'
   +(edit?'<button class="btn" style="width:100%;margin-top:10px" data-act="wallet-archive" data-id="'+ui.sheet.id+'">'+(byId(S.wallets,ui.sheet.id).archived?'Aktifkan kembali':'Arsipkan dompet')+'</button>':'');
 }
@@ -845,8 +850,17 @@ function budgetCard(key){
     return '<div style="margin:10px 0"><div class="mrow"><span>'+esc(r.c.name)+'</span><span class="sub num">'+formatRupiah(r.spent)+' / '+formatRupiah(r.limit)+'</span></div><div class="bar '+(lv==='over'?'out':lv==='warn'?'warn':'')+'"><i style="width:'+w+'%"></i></div><div class="sub" style="margin-top:2px">'+(lv==='over'?'Lewat '+formatRupiah(-r.st.left):'Sisa '+formatRupiah(r.st.left))+' · '+r.st.pct+'%</div></div>'}).join('')+'</div>';
 }
 function debtLeft(d){return debtRemaining(d.amount,d.payments,S.trxs).left}
+function quickButtons(){return '<div class="two" style="margin:0 0 4px"><button class="btn" style="color:var(--in)" data-act="quick" data-v="income">＋ Catat pemasukan</button><button class="btn" style="color:var(--out)" data-act="quick" data-v="expense">− Catat pengeluaran</button></div>'}
+function guideCard(){
+  if(S.tipsHidden)return '';
+  return '<div class="card"><h2>Mulai di sini <button class="btn ghost sm" data-act="tips-hide">Sembunyikan</button></h2><div class="list" style="font-size:14.5px">'
+   +'<div class="item"><div class="grow"><b>1. Catat setiap uang masuk dan keluar</b><div class="sub">Tekan Catat pemasukan / Catat pengeluaran, atau tombol + di pojok.</div></div></div>'
+   +'<div class="item"><div class="grow"><b>2. Pantau di Laporan</b><div class="sub">Lihat total masuk, keluar, dan grafik per bulan di tab Laporan.</div></div></div>'
+   +'<div class="item"><div class="grow"><b>3. Amankan data</b><div class="sub">Data tersimpan di HP ini. Tekan Menu › Cadangkan sesekali.</div></div></div></div></div>';
+}
 function homeAlerts(){
   var now=nowIso(),today=now.slice(0,10),items=[];
+  S.wallets.forEach(function(w){if(!w.archived&&w.minBalance>0&&bal(w)<w.minBalance)items.push(['m-wallets','Saldo '+w.name+' tinggal '+formatRupiah(bal(w)),'Rendah','warn'])});
   S.bills.forEach(function(b){var st=billStatus(b.day,b.lastPaidKey,now);if(st.state==='terlambat')items.push(['m-bills','Tagihan '+b.name+' terlambat '+(-st.days)+' hari',formatRupiah(b.amount),'bad']);else if(st.state==='segera')items.push(['m-bills','Tagihan '+b.name+(st.days===0?' jatuh tempo hari ini':' jatuh tempo '+st.days+' hari lagi'),formatRupiah(b.amount),'warn'])});
   budgetRows(curKey()).forEach(function(r){if(r.st.level!=='ok')items.push(['m-budgets','Anggaran '+r.c.name+(r.st.level==='over'?' terlampaui':' hampir habis'),r.st.pct+'%',r.st.level==='over'?'bad':'warn'])});
   S.debts.forEach(function(d){if(!d.archived&&d.due&&d.due<today&&debtLeft(d)>0)items.push(['m-debts',(d.kind==='utang'?'Utang ke ':'Piutang dari ')+d.person+' lewat jatuh tempo',formatRupiah(debtLeft(d)),'bad'])});
@@ -1169,6 +1183,7 @@ var actions={
   if(!id){var t=addTrxRaw(d);var msg='Tersimpan · '+t.no;
     if(d.type==='expense'&&d.categoryId&&S.budgets[d.categoryId]){var row=categoryBreakdown(live(),monthKey(d.at),'expense').find(function(r){return r.categoryId===d.categoryId}),st=budgetStatus(S.budgets[d.categoryId],row?row.total:0),cn=byId(S.categories,d.categoryId).name;
       if(st.level==='over')msg='⚠ Anggaran '+cn+' terlampaui ('+st.pct+'%)';else if(st.level==='warn')msg='Anggaran '+cn+' terpakai '+st.pct+'%'}
+    var lw=byId(S.wallets,d.walletId);if((d.type==='expense'||d.type==='transfer')&&lw&&lw.minBalance>0&&bal(lw)<lw.minBalance)msg='⚠ Saldo '+lw.name+' tinggal '+formatRupiah(bal(lw));
     toast(msg)}
   else{var t0=byId(S.trxs,id),ch=[];
     if(t0.amount!==d.amount)ch.push('nominal '+formatRupiah(t0.amount)+' → '+formatRupiah(d.amount));
@@ -1212,10 +1227,10 @@ var actions={
  },
  /* lainnya */
  'm-wallets':function(){openSheet({k:'wallets'})},
- 'wallet-new':function(){openSheet({k:'wallet',back:{k:'wallets'}},{name:'',type:'Tunai',initial:0})},
- 'wallet-edit':function(el){var w=byId(S.wallets,+el.dataset.id);openSheet({k:'wallet',id:w.id,back:{k:'wallets'}},{name:w.name,type:w.type})},
+ 'wallet-new':function(){openSheet({k:'wallet',back:{k:'wallets'}},{name:'',type:'Tunai',initial:0,minBalance:0})},
+ 'wallet-edit':function(el){var w=byId(S.wallets,+el.dataset.id);openSheet({k:'wallet',id:w.id,back:{k:'wallets'}},{name:w.name,type:w.type,minBalance:w.minBalance||0})},
  'wallet-save':function(){readForm();var d=ui.draft,id=ui.sheet.id;if(!d.name.trim())return showErr('Nama dompet wajib diisi');
-  if(id){var w=byId(S.wallets,id);w.name=d.name.trim();w.type=d.type}else S.wallets.push({id:nid(),name:d.name.trim(),type:d.type,initial:d.initial||0,archived:false});
+  if(id){var w=byId(S.wallets,id);w.name=d.name.trim();w.type=d.type;w.minBalance=d.minBalance||0}else S.wallets.push({id:nid(),name:d.name.trim(),type:d.type,initial:d.initial||0,minBalance:d.minBalance||0,archived:false});
   ui.sheet={k:'wallets'};ui.draft=null;persist();render()},
  'wallet-archive':function(el){var w=byId(S.wallets,+el.dataset.id);
   if(!w.archived&&S.wallets.filter(function(x){return !x.archived}).length<=1)return showErr('Minimal harus ada satu dompet aktif');
@@ -1252,13 +1267,18 @@ var actions={
      confirmDo('Pulihkan cadangan?','Data sekarang akan diganti dengan isi file ('+o.trxs.length+' transaksi, '+o.wallets.length+' dompet).','Pulihkan',function(){S=Object.assign(blank(),o);migrate();ui.locked=!!S.pin;toast('Data dipulihkan')},true)}catch(e){toast('File cadangan tidak valid')}};r.readAsText(f)};i.click()},
  'm-reset':function(){confirmDo('Hapus semua data?','Semua dompet, transaksi, dan target akan dihapus permanen dari browser ini'+(sync.col&&sync.st!=='off'?' dan dari akun Anda, sehingga hilang juga di semua perangkat lain'  :'')+'. Simpan cadangan dulu bila perlu.','Hapus semua',function(){S=blank();ui.draft=null;ui.tab='home'},true)},
  'export-csv':function(){var n=live().filter(function(t){return monthKey(t.at)===ui.month}).length;if(!n)return toast('Tidak ada transaksi di bulan ini');saveFile('transaksi-'+ui.month+'.csv',buildCsv(ui.month))},
- onboard:function(){readForm();var d=ui.draft;if(!d.name.trim())return showErr('Nama dompet wajib diisi');
-  S.wallets.push({id:nid(),name:d.name.trim(),type:d.type,initial:d.initial||0,archived:false});S.onboarded=true;ui.draft=null;persist();render()},
+ onboard:function(){readForm();var d=ui.draft;if(!d.name.trim())return showErr('⚠ Silakan isi nama dompet dulu');
+  S.wallets.push({id:nid(),name:d.name.trim(),type:d.type,initial:d.initial||0,archived:false});S.onboarded=true;ui.draft=null;persist();render();toast('✅ Dompet berhasil dibuat! Tekan + atau tombol di bawah saldo untuk mencatat.')},
  'onboard-sample':function(){loadSample();ui.draft=null;persist();render()}
 };
 
 Object.assign(actions,p2Actions());
 Object.assign(actions,syncActions());
+Object.assign(actions,{
+ quick:function(el){openSheet({k:'trx'},newDraft(el.dataset.v))},
+ 'tips-hide':function(){S.tipsHidden=true;persist();render()},
+ 'm-about':function(){openSheet({k:'about'})}
+});
 document.addEventListener('click',function(ev){
   var el=ev.target.closest('[data-act]');if(!el)return;
   var f=actions[el.getAttribute('data-act')];if(f){if(el.getAttribute('data-act')==='scrim'&&ev.target!==el)return;f(el,ev)}
@@ -1401,6 +1421,17 @@ function loadPhoto(id){
     if(s.exists&&s.data().data){t.photo=s.data().data;delete sync.loadingPh[id];saveLocalSoon();return true}
     sync.loadingPh[id]='fail';return false}).catch(function(){sync.loadingPh[id]='fail';return false});
 }
+sheetsX.about=function(){
+  return '<h2>Tentang & cara pakai</h2><div class="sub">CatatKeuanganKu — pencatat keuangan pribadi, keluarga, dan usaha kecil.</div>'
+  +'<div class="sec">Cara pakai singkat</div><div class="list" style="font-size:14.5px">'
+  +'<div class="item"><div class="grow"><b>Catat transaksi</b><div class="sub">Tombol + atau tombol di bawah saldo. Pilih jenis, isi nominal, dompet, kategori, lalu Simpan.</div></div></div>'
+  +'<div class="item"><div class="grow"><b>Salah catat?</b><div class="sub">Ketuk transaksinya › Ubah atau Hapus. Yang dihapus masuk Tempat sampah 30 hari.</div></div></div>'
+  +'<div class="item"><div class="grow"><b>Pindah uang antar dompet</b><div class="sub">Pilih Transfer di formulir transaksi.</div></div></div>'
+  +'<div class="item"><div class="grow"><b>Menabung untuk target</b><div class="sub">Tab Tabungan › + Target, lalu Setor.</div></div></div>'
+  +'<div class="item"><div class="grow"><b>Saldo di aplikasi beda dengan aslinya?</b><div class="sub">Menu › Dompet › Cocokkan, lalu isi saldo sebenarnya.</div></div></div></div>'
+  +'<div class="sec">Data & privasi</div><div class="sub" style="line-height:1.5">Data tersimpan di browser HP ini dan tidak dikirim ke server mana pun (kecuali sinkron akun Claude di versi Claude). Cadangkan lewat Menu › Cadangkan. Untuk menghapus semua data, pakai Menu › Hapus semua data; tindakan itu tidak bisa dibatalkan.</div>'
+  +'<div class="sub" style="margin-top:10px">Versi web · fase 3</div><button class="btn" style="width:100%;margin-top:14px" data-act="close">Tutup</button>';
+};
 sheetsX.sync=function(){
   var tone={ok:'ok',push:'warn',pull:'warn',error:'bad',conflict:'bad',na:'',off:'',init:''}[sync.st]||'';
   return '<h2>Sinkronisasi antar perangkat</h2><div class="sub">Data pribadi Anda disimpan di akun Claude dan muncul sama di semua HP/browser yang membuka aplikasi ini dengan akun yang sama.</div>'
